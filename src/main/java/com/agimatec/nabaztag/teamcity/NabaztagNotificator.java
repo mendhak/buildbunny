@@ -1,5 +1,8 @@
 package com.agimatec.nabaztag.teamcity;
 
+import jetbrains.buildServer.serverSide.mute.MuteInfo;
+import jetbrains.buildServer.tests.TestName;
+import jetbrains.buildServer.vcs.VcsRoot;
 import com.agimatec.nabaztag.Nabaztag;
 import jetbrains.buildServer.Build;
 import jetbrains.buildServer.BuildType;
@@ -8,7 +11,8 @@ import jetbrains.buildServer.notification.NotificatorRegistry;
 import jetbrains.buildServer.responsibility.ResponsibilityEntry;
 import jetbrains.buildServer.responsibility.TestNameResponsibilityEntry;
 import jetbrains.buildServer.serverSide.*;
-import jetbrains.buildServer.tests.SuiteTestName;
+//import jetbrains.buildServer.tests.SuiteTestName;
+import jetbrains.*;
 import jetbrains.buildServer.users.NotificatorPropertyKey;
 import jetbrains.buildServer.users.PropertyKey;
 import jetbrains.buildServer.users.SUser;
@@ -118,111 +122,6 @@ public class NabaztagNotificator implements Notificator {
         notificatorRegistry.register(this, userProps);
     }
 
-    public void notifyBuildStarted(SRunningBuild sRunningBuild, Set<SUser> sUsers) {
-        doNotifications(sRunningBuild, sUsers, null, BUILD_STARTED, DEFAULT_STARTED_MESSAGE);
-    }
-
-    public void notifyBuildSuccessful(SRunningBuild sRunningBuild, Set<SUser> sUsers) {
-        doNotifications(sRunningBuild, sUsers, Nabaztag.EARS_HAPPY, BUILD_SUCCESSFUL, DEFAULT_SUCCESSFUL_MESSAGE);
-    }
-
-    public void notifyBuildFailed(SRunningBuild sRunningBuild, Set<SUser> sUsers) {
-        doNotifications(sRunningBuild, sUsers, Nabaztag.EARS_SAD, BUILD_FAILED, DEFAULT_FAILED_MESSAGE);
-    }
-
-    public void notifyBuildFailedToStart(SRunningBuild sRunningBuild, Set<SUser> sUsers) {
-        doNotifications(sRunningBuild, sUsers, Nabaztag.EARS_SAD, BUILD_START_FAILED, DEFAULT_START_FAILED_MESSAGE);
-    }
-
-    public void notifyLabelingFailed(Build build, jetbrains.buildServer.vcs.VcsRoot vcsRoot, Throwable throwable, Set<SUser> sUsers) {
-        doNotifications(build, sUsers, Nabaztag.EARS_SAD, BUILD_LABELING, DEFAULT_LABELING_MESSAGE);
-    }
-
-    public void notifyBuildFailing(SRunningBuild sRunningBuild, Set<SUser> sUsers) {
-        doNotifications(sRunningBuild, sUsers, Nabaztag.EARS_SAD, BUILD_FAILING, DEFAULT_FAILING_MESSAGE);
-    }
-
-    public void notifyBuildProbablyHanging(SRunningBuild sRunningBuild, Set<SUser> sUsers) {
-        doNotifications(sRunningBuild, sUsers, Nabaztag.EARS_SAD, BUILD_HANGING, DEFAULT_HANGING_MESSAGE);
-    }
-
-    public void notifyResponsibleChanged(SBuildType sBuildType, Set<SUser> sUsers) {
-        doNotifications(sBuildType, sUsers, null, BUILD_RESPONSIBLE_CHANGED, DEFAULT_RESPONSIBLE_CHANGED_MESSAGE);
-    }
-
-    public void notifyResponsibleChanged(Collection<SuiteTestName> suiteTestNames, ResponsibilityEntry responsibilityEntry, SProject sProject, Set<SUser> sUsers) {
-        doNotifications(suiteTestNames, sProject, responsibilityEntry, sUsers, null, BUILD_RESPONSIBLE_CHANGED, DEFAULT_RESPONSIBLE_CHANGED_MESSAGE);
-    }
-
-    public void notifyResponsibleAssigned(SBuildType sBuildType, Set<SUser> sUsers) {
-        doNotifications(sBuildType, sUsers, null, BUILD_RESPONSIBLE_ASSIGNED, DEFAULT_RESPONSIBLE_ASSIGNED_MESSAGE);
-    }
-
-    public void notifyResponsibleChanged(TestNameResponsibilityEntry oldEntry, TestNameResponsibilityEntry newEntry, SProject sProject, Set<SUser> sUsers) {
-        doNotifications(sProject, oldEntry, newEntry, sUsers, null, BUILD_RESPONSIBLE_CHANGED, DEFAULT_RESPONSIBLE_CHANGED_MESSAGE);
-    }
-
-    public void notifyResponsibleAssigned(TestNameResponsibilityEntry oldEntry, TestNameResponsibilityEntry newEntry, SProject sProject, Set<SUser> sUsers) {
-        doNotifications(sProject, oldEntry, newEntry, sUsers, null, BUILD_RESPONSIBLE_ASSIGNED, DEFAULT_RESPONSIBLE_ASSIGNED_MESSAGE);
-    }
-
-    public void notifyResponsibleAssigned(Collection<SuiteTestName> suiteTestNames, ResponsibilityEntry responsibilityEntry, SProject sProject, Set<SUser> sUsers) {
-        doNotifications(suiteTestNames, sProject, responsibilityEntry, sUsers, null, BUILD_RESPONSIBLE_ASSIGNED, DEFAULT_RESPONSIBLE_ASSIGNED_MESSAGE);
-    }
-
-    public String getNotificatorType() {
-        return TYPE;
-    }
-
-    public String getDisplayName() {
-        return TYPE_NAME;
-    }
-
-    // Notifications for build events
-    private void doNotifications(Build build, Set<SUser> sUsers, String rabbitEars, PropertyKey messageKey, String messageDefault) {
-        String projectName = build.getFullName();
-        String userNames = getUserNames(build);
-        String comments = getComments(build);
-
-        for (SUser notifyUser : sUsers) {
-            doNotification(notifyUser, messageKey, messageDefault, projectName, userNames, comments, rabbitEars);
-        }
-    }
-
-    // Notifications for responsibility changes
-    private void doNotifications(BuildType buildType, Set<SUser> sUsers, String rabbitEars, PropertyKey messageKey, String messageDefault) {
-        String projectName = buildType.getFullName();
-        String userNames = buildType.getResponsibilityInfo().getUser().getName();
-        String comments = buildType.getResponsibilityInfo().getComment();
-
-        for (SUser notifyUser : sUsers) {
-            doNotification(notifyUser, messageKey, messageDefault, projectName, userNames, comments, rabbitEars);
-        }
-    }
-
-    private void doNotifications(SProject sProject, TestNameResponsibilityEntry oldEntry, TestNameResponsibilityEntry newEntry, Set<SUser> sUsers, String rabbitEars, PropertyKey messageKey, String messageDefault) {
-        String projectName = sProject.getName();
-        String userNames = newEntry.getResponsibleUser().getName();
-        String comments = newEntry.getTestName().getNameWithoutParameters();
-
-        for (SUser notifyUser : sUsers) {
-            doNotification(notifyUser, messageKey, messageDefault, projectName, userNames, comments, rabbitEars);
-        }
-    }
-
-    private void doNotifications(Collection<SuiteTestName> suiteTestNames, SProject sProject, ResponsibilityEntry responsibilityEntry, Set<SUser> sUsers, String rabbitEars, PropertyKey messageKey, String messageDefault) {
-        String projectName = sProject.getName();
-        String userNames = responsibilityEntry.getResponsibleUser().getName();
-        String comments = "";
-
-        for (SuiteTestName suiteTestName : suiteTestNames) {
-            comments += suiteTestName.getTestName() + " ";
-        }
-
-        for (SUser notifyUser : sUsers) {
-            doNotification(notifyUser, messageKey, messageDefault, projectName, userNames, comments, rabbitEars);
-        }
-    }
 
 
     public void doNotification(SUser notifyUser, PropertyKey messageKey, String messageDefault, String projectName, String userName, String comment, String rabbitEars) {
@@ -360,5 +259,109 @@ public class NabaztagNotificator implements Notificator {
         String[] voices = new String[]{"AU-Colleen", "AU-Jon", "UK-Edwin", "UK-Leonard", "UK-Mistermuggles", "UK-Penelope", "UK-Rachel", "UK-Shirley", "US-Bethany", "US-Billye", "US-Clarence", "US-Darleen", "US-Ernest", "US-Liberty", "US-Lilian"};
         int index = new Random().nextInt(voices.length);
         return voices[index];
+    }
+
+    @Override
+    public void notifyBuildStarted(@org.jetbrains.annotations.NotNull SRunningBuild sRunningBuild, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+
+
+    @Override
+    public void notifyBuildSuccessful(@org.jetbrains.annotations.NotNull SRunningBuild sRunningBuild, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyBuildFailed(@org.jetbrains.annotations.NotNull SRunningBuild sRunningBuild, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyBuildFailedToStart(@org.jetbrains.annotations.NotNull SRunningBuild sRunningBuild, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyLabelingFailed(@org.jetbrains.annotations.NotNull Build build, @org.jetbrains.annotations.NotNull VcsRoot vcsRoot, @org.jetbrains.annotations.NotNull Throwable throwable, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyBuildFailing(@org.jetbrains.annotations.NotNull SRunningBuild sRunningBuild, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyBuildProbablyHanging(@org.jetbrains.annotations.NotNull SRunningBuild sRunningBuild, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyResponsibleChanged(@org.jetbrains.annotations.NotNull SBuildType sBuildType, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyResponsibleAssigned(@org.jetbrains.annotations.NotNull SBuildType sBuildType, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyResponsibleChanged(@org.jetbrains.annotations.Nullable TestNameResponsibilityEntry testNameResponsibilityEntry, @org.jetbrains.annotations.NotNull TestNameResponsibilityEntry testNameResponsibilityEntry2, @org.jetbrains.annotations.NotNull SProject sProject, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyResponsibleAssigned(@org.jetbrains.annotations.Nullable TestNameResponsibilityEntry testNameResponsibilityEntry, @org.jetbrains.annotations.NotNull TestNameResponsibilityEntry testNameResponsibilityEntry2, @org.jetbrains.annotations.NotNull SProject sProject, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyResponsibleChanged(@org.jetbrains.annotations.NotNull Collection<TestName> testNames, @org.jetbrains.annotations.NotNull ResponsibilityEntry responsibilityEntry, @org.jetbrains.annotations.NotNull SProject sProject, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyResponsibleAssigned(@org.jetbrains.annotations.NotNull Collection<TestName> testNames, @org.jetbrains.annotations.NotNull ResponsibilityEntry responsibilityEntry, @org.jetbrains.annotations.NotNull SProject sProject, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyTestsMuted(@org.jetbrains.annotations.NotNull Collection<STest> sTests, @org.jetbrains.annotations.NotNull MuteInfo muteInfo, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void notifyTestsUnmuted(@org.jetbrains.annotations.NotNull Collection<STest> sTests, @org.jetbrains.annotations.NotNull MuteInfo muteInfo, @org.jetbrains.annotations.Nullable SUser sUser, @org.jetbrains.annotations.NotNull Set<SUser> sUsers)
+    {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public String getNotificatorType()
+    {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public String getDisplayName()
+    {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 }
